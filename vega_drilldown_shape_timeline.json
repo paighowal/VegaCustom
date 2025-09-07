@@ -1,11 +1,16 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v6.json",
   "description": "Modified Gantt Chart - Shape-based Activity View for Medical Education",
-  "autosize": "pad",
+  "autosize": {"type": "fit", "resize": true},
   "width": 1200,
   "padding": {"left": 5, "right": 0, "top": 5, "bottom": 0},
   "signals": [
-    {"name": "height", "update": "500"},
+    {"name": "minHeight", "value": 300, "description": "Minimum height of the visual"},
+    {"name": "maxHeight", "value": 800, "description": "Maximum height before scrolling kicks in"},
+    {"name": "heightPadding", "value": 100, "description": "Extra padding for dynamic height calculation"},
+    {"name": "enableDynamicHeight", "value": true, "description": "Enable/disable dynamic height"},
+    {"name": "dynamicHeight", "update": "enableDynamicHeight ? max(minHeight, min(maxHeight, data('yScale').length * yRowHeight + heightPadding)) : 500"},
+    {"name": "height", "update": "dynamicHeight"},
     {"name": "showTooltips", "value": true},
     {"name": "showButtons", "value": true},
     {"name": "showDomainSpanLabel", "value": false},
@@ -93,12 +98,13 @@
         }
       ]
     },
-    {"name": "needsScroll", "update": "scaledHeight > height"},
+    {"name": "needsScroll", "update": "scaledHeight > height && height >= maxHeight"},
     {"name": "yScroll", "value": 0, "on": [
       {"events": "@scrollThumb:pointerdown", "update": "0"},
       {"events": "[@scrollThumb:pointerdown, window:pointerup] > window:pointermove", 
        "update": "clamp(yScroll + (event.movementY * (scaledHeight - height) / (height - 20)), 0, max(0, scaledHeight - height))"},
-      {"events": "wheel!", "update": "x() < columnsWidth ? clamp(yScroll + event.deltaY * 3, 0, max(0, scaledHeight - height)) : yScroll"}
+      {"events": "wheel!", "update": "x() < columnsWidth ? clamp(yScroll + event.deltaY * 3, 0, max(0, scaledHeight - height)) : yScroll"},
+      {"events": {"signal": "dynamicHeight"}, "update": "needsScroll ? clamp(yScroll, 0, max(0, scaledHeight - height)) : 0"}
     ]},
     {
       "type": "group",
@@ -173,20 +179,24 @@
     {"name": "scaledHeight", "update": "data('yScale').length * yRowHeight"},
     {
       "name": "yRange",
-      "update": "[yScroll, yScroll + height]",
+      "update": "needsScroll ? [yScroll, yScroll + height] : [0, scaledHeight]",
       "on": [
         {
           "events": [{"signal": "delta"}],
-          "update": "clampRange( [yCur[0] + span(yCur) * delta[1] / scaledHeight, yCur[1] + span(yCur) * delta[1] / scaledHeight],height>=scaledHeight?0: height-scaledHeight,height>=scaledHeight?height:scaledHeight)"
+          "update": "needsScroll ? clampRange( [yCur[0] + span(yCur) * delta[1] / scaledHeight, yCur[1] + span(yCur) * delta[1] / scaledHeight], 0, scaledHeight - height) : [0, scaledHeight]"
         },
-        {"events": "dblclick", "update": "[0,scaledHeight]"},
+        {"events": "dblclick", "update": "needsScroll ? [0, height] : [0, scaledHeight]"},
         {
           "events": {"signal": "closeAll"},
-          "update": "closeAll?[yScroll, yScroll + height]:yRange"
+          "update": "needsScroll ? [yScroll, yScroll + height] : [0, scaledHeight]"
         },
         {
           "events": {"signal": "yScroll"},
-          "update": "[yScroll, yScroll + height]"
+          "update": "needsScroll ? [yScroll, yScroll + height] : [0, scaledHeight]"
+        },
+        {
+          "events": {"signal": "dynamicHeight"},
+          "update": "needsScroll ? [yScroll, yScroll + height] : [0, scaledHeight]"
         }
       ]
     },
