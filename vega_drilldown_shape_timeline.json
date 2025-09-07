@@ -22,10 +22,11 @@
     {"name": "showButtons", "value": true},
     {"name": "showDomainSpanLabel", "value": false},
     // === TIME GRANULARITY CONTROLS ===
+    // Default to "Months" view - this makes Months button preselected
     {
       "name": "startGrain",
       "value": "Months",
-      "description": "Days, Months, Years or All"
+      "description": "Days, Months, Years or All - Months is default"
     },
     
     // === INITIAL STATE CONFIGURATION ===
@@ -481,7 +482,7 @@
             "project_end",
             "continuum"
           ],
-          "ops": ["min", "max", "distinct"],           // Get date range and unique continuum levels
+          "ops": ["min", "max", "min"],              // Get date range and minimum continuum level
           "as": ["project_start", "project_end", "continuum"],
           "groupby": ["project", "phase"]
         },
@@ -489,12 +490,8 @@
         {"type": "formula", "as": "task", "expr": "datum.phase"},
         {"type": "formula", "as": "taskSort", "expr": "0"},        // Phases sort first within groups
         {"type": "formula", "as": "showTextLabel", "expr": "''"},  // No text labels for phase rows
-        // Convert continuum array to comma-separated string
-        {
-          "type": "formula",
-          "as": "continuum",
-          "expr": "isArray(datum.continuum) ? join(datum.continuum, ', ') : datum.continuum"
-        },
+        // Continuum is now a single minimum value (no conversion needed)
+        // {continuum field already contains the minimum value from aggregation}
         // Add sorting and unique IDs for phases
         {
           "type": "window",
@@ -870,6 +867,9 @@
                   "limit": {"signal": "projectColumnWidth-16"},
                   "fill": {
                     "signal": "toString(datum.id) == itemHovered.id  ?merge(hsl(scale('cDark', datum.project)), {l:0.40}):textColour"
+                  },
+                  "tooltip": {
+                    "signal": "showTooltips ? {'Organization': datum.project} : null"
                   }
                 }
               }
@@ -918,6 +918,9 @@
                   "limit": {"signal": "taskColumnWidth-16"},
                   "fill": {
                     "signal": "toString(datum.id) == itemHovered.id  ?merge(hsl(scale('cDark', datum.project)), {l:0.40}):textColour"
+                  },
+                  "tooltip": {
+                    "signal": "showTooltips ? (datum.phase == datum.task ? {'Grant Title': datum.phase} : {'Activity': datum.task, 'Grant Title': datum.phase}) : null"
                   }
                 }
               }
@@ -982,6 +985,9 @@
                   "limit": {"signal": "continualColumnWidth-16"},
                   "fill": {
                     "signal": "toString(datum.id) == itemHovered.id  ?merge(hsl(scale('cDark', datum.project)), {l:0.40}):textColour"
+                  },
+                  "tooltip": {
+                    "signal": "showTooltips && datum.continuum ? {'Learner Level': datum.continuum} : null"
                   }
                 }
               }
