@@ -93,6 +93,13 @@
         }
       ]
     },
+    {"name": "needsScroll", "update": "scaledHeight > height"},
+    {"name": "yScroll", "value": 0, "on": [
+      {"events": "@scrollThumb:pointerdown", "update": "0"},
+      {"events": "[@scrollThumb:pointerdown, window:pointerup] > window:pointermove", 
+       "update": "clamp(yScroll + (event.movementY * (scaledHeight - height) / (height - 20)), 0, max(0, scaledHeight - height))"},
+      {"events": "wheel!", "update": "x() < columnsWidth ? clamp(yScroll + event.deltaY * 3, 0, max(0, scaledHeight - height)) : yScroll"}
+    ]},
     {
       "type": "group",
       "name": "scrollbar",
@@ -100,7 +107,7 @@
         "update": {
           "x": {"signal": "columnsWidth + ganttWidth + 5"},
           "y": {"value": 0},
-          "width": {"value": 10},
+          "width": {"value": 15},
           "height": {"signal": "height"},
           "fill": {"value": "transparent"},
           "opacity": {"signal": "needsScroll ? 1 : 0"}
@@ -127,12 +134,16 @@
           "name": "scrollThumb",
           "encode": {
             "update": {
-              "x": {"value": 1},
-              "y": {"signal": "(yScroll / (data('yScale').length * yRowHeight - height)) * (height - (height * height / (data('yScale').length * yRowHeight)))"},
-              "width": {"value": 6},
-              "height": {"signal": "max(20, height * height / (data('yScale').length * yRowHeight))"},
-              "fill": {"value": "#999"},
-              "cornerRadius": {"value": 3}
+              "x": {"value": 2},
+              "y": {"signal": "needsScroll ? (yScroll / (scaledHeight - height)) * (height - max(20, height * height / scaledHeight)) : 0"},
+              "width": {"value": 11},
+              "height": {"signal": "needsScroll ? max(20, height * height / scaledHeight) : 0"},
+              "fill": {"value": "#666"},
+              "cornerRadius": {"value": 3},
+              "cursor": {"value": "pointer"}
+            },
+            "hover": {
+              "fill": {"value": "#333"}
             }
           }
         }
@@ -162,7 +173,7 @@
     {"name": "scaledHeight", "update": "data('yScale').length * yRowHeight"},
     {
       "name": "yRange",
-      "update": "[yRange!=null?yRange[0]:0,yRange!=null?yRange[0]+scaledHeight:scaledHeight]",
+      "update": "[yScroll, yScroll + height]",
       "on": [
         {
           "events": [{"signal": "delta"}],
@@ -171,7 +182,11 @@
         {"events": "dblclick", "update": "[0,scaledHeight]"},
         {
           "events": {"signal": "closeAll"},
-          "update": "closeAll?[0, scaledHeight]:yRange"
+          "update": "closeAll?[yScroll, yScroll + height]:yRange"
+        },
+        {
+          "events": {"signal": "yScroll"},
+          "update": "[yScroll, yScroll + height]"
         }
       ]
     },
@@ -399,7 +414,7 @@
             "project_end",
             "continuum"
           ],
-          "ops": ["min", "max", "values"],
+          "ops": ["min", "max", "distinct"],
           "as": ["project_start", "project_end", "continuum"],
           "groupby": ["project", "phase"]
         },
@@ -409,7 +424,7 @@
         {
           "type": "formula",
           "as": "continuum",
-          "expr": "datum.continuum[0]"
+          "expr": "isArray(datum.continuum) ? join(datum.continuum, ', ') : datum.continuum"
         },
         {
           "type": "window",
@@ -536,6 +551,32 @@
         {"side": "right", "text": "Months", "x": 150},
         {"side": "right", "text": "Days", "x": 200, "leftRadius": 4}
       ]
+    },
+    {
+      "name": "organizationBoundaries",
+      "source": "yScale",
+      "transform": [
+        {
+          "type": "aggregate",
+          "fields": ["finalSort"],
+          "ops": ["max"],
+          "as": ["maxSort"],
+          "groupby": ["project"]
+        },
+        {
+          "type": "lookup",
+          "from": "yScale",
+          "key": "finalSort",
+          "values": ["id"],
+          "fields": ["maxSort"],
+          "as": ["lastId"]
+        },
+        {
+          "type": "formula",
+          "as": "y",
+          "expr": "scale('y', datum.lastId) + bandwidth('y')"
+        }
+      ]
     }
   ],
   "marks": [
@@ -642,6 +683,24 @@
           "height": {"signal": "bandwidth('y')"},
           "fill": {"value": "#dceaf7"},
           "opacity": {"value": 0.3}
+        }
+      }
+    },
+    {
+      "name": "organizationGridLines",
+      "description": "Horizontal grid lines for each Organization group",
+      "type": "rule",
+      "clip": true,
+      "zindex": 1,
+      "from": {"data": "organizationBoundaries"},
+      "encode": {
+        "update": {
+          "x": {"value": 0},
+          "x2": {"signal": "columnsWidth + ganttWidth"},
+          "y": {"signal": "datum.y"},
+          "stroke": {"value": "#cccccc"},
+          "strokeWidth": {"value": 1.5},
+          "opacity": {"value": 0.7}
         }
       }
     },
