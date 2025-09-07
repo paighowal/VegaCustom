@@ -1,34 +1,51 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v6.json",
   "description": "Modified Gantt Chart - Shape-based Activity View for Medical Education",
+  
+  // Auto-sizing configuration for responsive behavior
   "autosize": {"type": "fit", "resize": true},
   "width": 1200,
   "padding": {"left": 5, "right": 0, "top": 5, "bottom": 0},
   "signals": [
+    // === DYNAMIC HEIGHT CONFIGURATION ===
+    // Controls for making the chart height responsive to content
     {"name": "minHeight", "value": 300, "description": "Minimum height of the visual"},
     {"name": "maxHeight", "value": 50000, "description": "Maximum height before scrolling kicks in"},
     {"name": "heightPadding", "value": 100, "description": "Extra padding for dynamic height calculation"},
     {"name": "enableDynamicHeight", "value": true, "description": "Enable/disable dynamic height"},
     {"name": "dynamicHeight", "update": "enableDynamicHeight ? max(minHeight, min(maxHeight, data('yScale').length * yRowHeight + heightPadding)) : 500"},
     {"name": "height", "update": "dynamicHeight"},
+    
+    // === UI CONTROL SIGNALS ===
+    // Toggles for various UI elements
     {"name": "showTooltips", "value": true},
     {"name": "showButtons", "value": true},
     {"name": "showDomainSpanLabel", "value": false},
+    // === TIME GRANULARITY CONTROLS ===
     {
       "name": "startGrain",
       "value": "Months",
       "description": "Days, Months, Years or All"
     },
+    
+    // === INITIAL STATE CONFIGURATION ===
     {"name": "initPhaseState", "value": "close", "description": "open or close"},
+    
+    // === COLOR SCHEMES ===
+    // Text color for labels and UI elements
     {"name": "textColour", "value": "#666666"},
+    // Dark color palette for organizations/projects
     {
       "name": "coloursDark",
       "value": ["#377eb9", "#4db04a", "#974ea2", "#ff8000", "#e61a1d", "#8b5a3c", "#f781bf"]
     },
+    // Light color palette for organizations/projects
     {
       "name": "coloursLight",
       "value": ["#a5c8e4", "#b5dfb3", "#d3b0d9", "#ffcc99", "#f5a3a5", "#c4a484", "#fbc9e0"]
     },
+    // === LAYOUT DIMENSIONS ===
+    // Row height and spacing configuration
     {"name": "yRowHeight", "value": 33, "description": "Height in pixels"},
     {
       "name": "yRowPadding",
@@ -36,32 +53,50 @@
       "description": "Row padding as % of yRowHeight (each side)"
     },
     {"name": "yPaddingInner", "update": "yRowPadding * yRowHeight"},
-    {"name": "projectColumnWidth", "value": 170},
-    {"name": "taskColumnWidth", "value": 250},
-    {"name": "continualColumnWidth", "value": 100},
-    {"name": "startColumnWidth", "value": 55},
-    {"name": "endColumnWidth", "value": 55},
-    {"name": "columnPadding", "value": 15},
+    
+    // Column width definitions for the left-side table
+    {"name": "projectColumnWidth", "value": 170},      // Organization column
+    {"name": "taskColumnWidth", "value": 250},         // Grant Title/Activity column
+    {"name": "continualColumnWidth", "value": 100},    // Learner Level column
+    {"name": "startColumnWidth", "value": 55},         // Start Date column
+    {"name": "endColumnWidth", "value": 55},           // End Date column
+    {"name": "columnPadding", "value": 15},            // Padding between columns
+    // === TIME CALCULATIONS ===
+    // Milliseconds in one day for date calculations
     {"name": "oneDay", "update": "1000*60*60*24"},
+    // Timezone offset calculation based on project start date
     {
       "name": "timeoffset",
       "update": "timezoneoffset(data('dataset')[0]['project_start_date']) * 60 *1000"
     },
+    
+    // === BANDWIDTH CALCULATIONS FOR TIME AXIS ===
+    // Calculate pixel width of one day on the time axis
     {
       "name": "dayBandwidth",
       "update": "scale('x', timeOffset('day', datetime(2000,1,1),1)) - scale('x', datetime(2000,1,1))"
     },
     {"name": "dayBandwidthRound", "update": "(round(dayBandwidth *100)/100)"},
-    {"name": "minDayBandwidth", "value": 20},
-    {"name": "minMonthBandwidth", "value": 3},
-    {"name": "minYearBandwidth", "value": 0.95},
+    
+    // Minimum bandwidth thresholds for different time granularities
+    {"name": "minDayBandwidth", "value": 20},      // Minimum pixels per day
+    {"name": "minMonthBandwidth", "value": 3},     // Minimum pixels per month
+    {"name": "minYearBandwidth", "value": 0.95},   // Minimum pixels per year
+    // === SYMBOL DIMENSIONS ===
+    // Size calculations for expand/collapse symbols
     {"name": "phaseSymbolHeight", "update": "bandwidth('y')-yPaddingInner-5"},
     {"name": "phaseSymbolWidth", "value": 10},
+    
+    // === AREA CALCULATIONS ===
+    // Total width of all columns combined
     {
       "name": "columnsWidth",
       "update": "projectColumnWidth+taskColumnWidth+continualColumnWidth+startColumnWidth+endColumnWidth+(columnPadding*5)"
     },
+    // Width available for the Gantt chart timeline
     {"name": "ganttWidth", "update": "width-columnsWidth-minDayBandwidth"},
+    // === TIME DOMAIN EXTENTS ===
+    // Calculate time ranges for different granularity levels
     {
       "name": "dayExt",
       "update": "[data('xExt')[0]['s']-oneDay,data('xExt')[0]['s']+ ((ganttWidth-minDayBandwidth)/minDayBandwidth)*oneDay]"
@@ -78,15 +113,21 @@
       "name": "allExt",
       "update": "[data('xExt')[0]['s']-oneDay,data('xExt')[0]['e']+oneDay*9]"
     },
+    // Select appropriate time extent based on current granularity
     {
       "name": "xExt",
       "update": "startGrain=='All'?allExt:startGrain=='Years'?yearExt:startGrain=='Months'?monthExt:dayExt"
     },
+    // === TODAY MARKER ===
+    // Calculate today's date for timeline marker
     {
       "name": "today",
       "update": "+datetime(year(now()),month(now()),date(now()))"
     },
     {"name": "todayRule", "update": "timeFormat(today,'%Y-%m-%d')"},
+    
+    // === ZOOM CONTROL ===
+    // Mouse wheel zoom functionality for timeline
     {
       "name": "zoom",
       "value": 1,
@@ -98,7 +139,11 @@
         }
       ]
     },
+    
+    // === VERTICAL SCROLLING SYSTEM ===
+    // Determine if vertical scrolling is needed
     {"name": "needsScroll", "update": "scaledHeight > height && height >= maxHeight"},
+    // Track vertical scroll position with mouse and wheel events
     {"name": "yScroll", "value": 0, "on": [
       {"events": "@scrollThumb:pointerdown", "update": "0"},
       {"events": "[@scrollThumb:pointerdown, window:pointerup] > window:pointermove", 
@@ -106,17 +151,19 @@
       {"events": "wheel!", "update": "x() < columnsWidth ? clamp(yScroll + event.deltaY * 3, 0, max(0, scaledHeight - height)) : yScroll"},
       {"events": {"signal": "dynamicHeight"}, "update": "needsScroll ? clamp(yScroll, 0, max(0, scaledHeight - height)) : 0"}
     ]},
+    // === SCROLLBAR VISUAL COMPONENT ===
+    // Container for the vertical scrollbar
     {
       "type": "group",
       "name": "scrollbar",
       "encode": {
         "update": {
-          "x": {"signal": "columnsWidth + ganttWidth + 5"},
+          "x": {"signal": "columnsWidth + ganttWidth + 5"},  // Position to the right of gantt
           "y": {"value": 0},
-          "width": {"value": 15},
+          "width": {"value": 15},                            // Scrollbar width
           "height": {"signal": "height"},
           "fill": {"value": "transparent"},
-          "opacity": {"signal": "needsScroll ? 1 : 0"}
+          "opacity": {"signal": "needsScroll ? 1 : 0"}       // Only show when scrolling needed
         }
       },
       "marks": [
@@ -312,78 +359,84 @@
     }
   ],
   "data": [
+    // === PRIMARY DATASET ===
+    // Raw data input with date parsing configuration
     {
       "name": "dataset",
       "format": {
         "parse": {
-          "activity_start_date": "date", 
-          "activity_end_date": "date",
-          "project_start_date": "date",
-          "project_end_date": "date"
+          "activity_start_date": "date",     // Parse activity start as date
+          "activity_end_date": "date",       // Parse activity end as date
+          "project_start_date": "date",      // Parse project start as date
+          "project_end_date": "date"         // Parse project end as date
         }
       },
       "transform": [
+        // Map raw data fields to standardized field names
         {
           "type": "formula",
           "as": "id",
-          "expr": "datum.activity_index"
+          "expr": "datum.activity_index"                // Unique identifier for each activity
         },
         {
           "type": "formula",
           "as": "project",
-          "expr": "datum.Organization_Name"
+          "expr": "datum.Organization_Name"             // Organization name (project grouping)
         },
         {
           "type": "formula",
           "as": "phase",
-          "expr": "datum.Grant_Title"
+          "expr": "datum.Grant_Title"                   // Grant title (phase grouping)
         },
         {
           "type": "formula",
           "as": "task",
-          "expr": "datum.delivery_format"
+          "expr": "datum.delivery_format"               // Delivery format (activity type)
         },
         {
           "type": "formula",
           "as": "continuum",
-          "expr": "datum.learner_continuum_level"
+          "expr": "datum.learner_continuum_level"       // Learner education level
         },
         {
           "type": "formula",
           "as": "start",
-          "expr": "datum.activity_start_date"
+          "expr": "datum.activity_start_date"           // Activity start date
         },
         {
           "type": "formula",
           "as": "end",
-          "expr": "datum.activity_end_date"
+          "expr": "datum.activity_end_date"             // Activity end date
         },
         {
           "type": "formula",
           "as": "project_start",
-          "expr": "datum.project_start_date"
+          "expr": "datum.project_start_date"            // Project start date
         },
         {
           "type": "formula",
           "as": "project_end",
-          "expr": "datum.project_end_date"
+          "expr": "datum.project_end_date"              // Project end date
         },
         {
           "type": "formula",
           "as": "showTextLabel",
-          "expr": "datum.ShowTextLabel || ''"
+          "expr": "datum.ShowTextLabel || ''"           // Optional text labels for activities
         },
         {
           "type": "formula",
           "as": "activityCompleted",
-          "expr": "datum['ActivityCompleted%'] || 0"
+          "expr": "datum['ActivityCompleted%'] || 0"    // Activity completion percentage
         }
       ]
     },
+    // === PROCESSED INPUT DATA ===
+    // Convert dates to timestamps and add sorting information
     {
       "name": "input",
       "source": "dataset",
       "transform": [
+        // Convert date objects to numeric timestamps for calculations
         {
           "type": "formula",
           "as": "start",
@@ -404,6 +457,7 @@
           "as": "project_end",
           "expr": "+datetime(year(datum.project_end),month(datum.project_end),date(datum.project_end))"
         },
+        // Add ranking for tasks within each project/phase for consistent ordering
         {
           "type": "window",
           "sort": {"field": "start", "order": "ascending"},
@@ -413,10 +467,13 @@
         }
       ]
     },
+    // === PHASE SUMMARY DATA ===
+    // Aggregate activities into phase-level summaries for collapsed view
     {
       "name": "phases",
       "source": "input",
       "transform": [
+        // Aggregate project dates and continuum levels by project/phase
         {
           "type": "aggregate",
           "fields": [
@@ -424,24 +481,28 @@
             "project_end",
             "continuum"
           ],
-          "ops": ["min", "max", "distinct"],
+          "ops": ["min", "max", "distinct"],           // Get date range and unique continuum levels
           "as": ["project_start", "project_end", "continuum"],
           "groupby": ["project", "phase"]
         },
+        // Set task name same as phase for phase rows
         {"type": "formula", "as": "task", "expr": "datum.phase"},
-        {"type": "formula", "as": "taskSort", "expr": "0"},
-        {"type": "formula", "as": "showTextLabel", "expr": "''"},
+        {"type": "formula", "as": "taskSort", "expr": "0"},        // Phases sort first within groups
+        {"type": "formula", "as": "showTextLabel", "expr": "''"},  // No text labels for phase rows
+        // Convert continuum array to comma-separated string
         {
           "type": "formula",
           "as": "continuum",
           "expr": "isArray(datum.continuum) ? join(datum.continuum, ', ') : datum.continuum"
         },
+        // Add sorting and unique IDs for phases
         {
           "type": "window",
           "sort": {"field": ["project", "project_start"], "order": ["ascending", "ascending"]},
           "ops": ["row_number", "row_number"],
           "as": ["phaseSort", "id"]
         },
+        // Create unique IDs that won't conflict with activity IDs
         {
           "type": "formula",
           "as": "id",
@@ -449,19 +510,23 @@
         }
       ]
     },
+    // === COLLAPSED PHASES TRACKER ===
+    // Dynamic dataset tracking which phases are currently collapsed
     {
       "name": "collapsedPhases",
       "on": [
-        {"trigger": "phaseClicked", "toggle": "phaseClicked"},
+        {"trigger": "phaseClicked", "toggle": "phaseClicked"},     // Toggle phase on click
         {
           "trigger": "initPhaseState",
-          "insert": "initPhaseState=='close'? data('phases'):null"
+          "insert": "initPhaseState=='close'? data('phases'):null" // Initialize collapsed state
         },
-        {"trigger": "closeAll", "remove": true},
-        {"trigger": "closeAll", "insert": "data('phases')"},
-        {"trigger": "openAll", "remove": true}
+        {"trigger": "closeAll", "remove": true},                  // Clear all on "Close All"
+        {"trigger": "closeAll", "insert": "data('phases')"},      // Add all phases to collapsed
+        {"trigger": "openAll", "remove": true}                    // Remove all on "Open All"
       ]
     },
+    // === VISIBLE TASKS ===
+    // Filter tasks to show only those from expanded (non-collapsed) phases
     {
       "name": "tasks",
       "source": "input",
@@ -472,14 +537,18 @@
         }
       ]
     },
+    // === COLLAPSED ACTIVITIES ===
+    // Activities that belong to collapsed phases (shown as dots on phase lines)
     {
       "name": "collapsedActivities",
       "source": "input",
       "transform": [
+        // Filter to only activities from collapsed phases
         {
           "type": "filter",
           "expr": "indata('collapsedPhases', 'phase', datum.phase) && indata('collapsedPhases', 'project', datum.project)"
         },
+        // Link to phase IDs for positioning
         {
           "type": "lookup",
           "from": "phases",
@@ -490,10 +559,13 @@
         }
       ]
     },
+    // === Y-AXIS SCALE DATA ===
+    // Combined and sorted data for positioning rows on the y-axis
     {
       "name": "yScale",
       "source": ["tasks", "phases"],
       "transform": [
+        // Link tasks to their phase sort order
         {
           "type": "lookup",
           "from": "phases",
@@ -501,6 +573,7 @@
           "values": ["phaseSort"],
           "fields": ["phase"]
         },
+        // Create final sort order: project -> phase -> task
         {
           "type": "window",
           "sort": {
@@ -512,6 +585,8 @@
         }
       ]
     },
+    // === TIME EXTENT CALCULATION ===
+    // Calculate the overall time range of all projects
     {
       "name": "xExt",
       "source": "input",
@@ -519,14 +594,17 @@
         {
           "type": "aggregate",
           "fields": ["project_start", "project_end"],
-          "ops": ["min", "max"],
+          "ops": ["min", "max"],                    // Get earliest start and latest end
           "as": ["s", "e"]
         }
       ]
     },
+    // === WEEKEND HIGHLIGHTING ===
+    // Generate weekend dates for background shading
     {
       "name": "weekends",
       "transform": [
+        // Create sequence of days in current time domain
         {
           "type": "sequence",
           "start": 0,
@@ -535,15 +613,18 @@
           },
           "as": "sequence"
         },
+        // Convert sequence to actual dates
         {
           "type": "formula",
           "as": "start",
           "expr": "+datetime(year(xDom[0]),month(xDom[0]),date(xDom[0]))   +(oneDay*datum.sequence)"
         },
+        // Filter to only weekends (Saturday=6, Sunday=0)
         {
           "type": "filter",
           "expr": "day(datum.start) == 6 || day(datum.start) == 0 "
         },
+        // Calculate end of weekend day
         {
           "type": "formula",
           "as": "end",
@@ -551,21 +632,26 @@
         }
       ]
     },
+    // === CONTROL BUTTONS ===
+    // Configuration for expand/collapse and time granularity buttons
     {
       "name": "buttons",
       "values": [
-        {"side": "left", "text": "Close", "x": 15, "leftRadius": 4},
-        {"side": "left", "text": "Open", "x": 65, "rightRadius": 4},
-        {"side": "right", "text": "All", "x": 50, "rightRadius": 4},
-        {"side": "right", "text": "Years", "x": 100},
-        {"side": "right", "text": "Months", "x": 150},
-        {"side": "right", "text": "Days", "x": 200, "leftRadius": 4}
+        {"side": "left", "text": "Close", "x": 15, "leftRadius": 4},    // Collapse all phases
+        {"side": "left", "text": "Open", "x": 65, "rightRadius": 4},     // Expand all phases
+        {"side": "right", "text": "All", "x": 50, "rightRadius": 4},      // Show all time
+        {"side": "right", "text": "Years", "x": 100},                     // Year granularity
+        {"side": "right", "text": "Months", "x": 150},                    // Month granularity
+        {"side": "right", "text": "Days", "x": 200, "leftRadius": 4}      // Day granularity
       ]
     },
+    // === ORGANIZATION GRID LINES ===
+    // Calculate positions for horizontal grid lines between organizations
     {
       "name": "organizationBoundaries",
       "source": "yScale",
       "transform": [
+        // Find the last row of each organization
         {
           "type": "aggregate",
           "fields": ["finalSort"],
@@ -573,6 +659,7 @@
           "as": ["maxSort"],
           "groupby": ["project"]
         },
+        // Get the ID of the last row for each organization
         {
           "type": "lookup",
           "from": "yScale",
@@ -581,6 +668,7 @@
           "fields": ["maxSort"],
           "as": ["lastId"]
         },
+        // Calculate y position for grid line (bottom of last row)
         {
           "type": "formula",
           "as": "y",
@@ -590,6 +678,8 @@
     }
   ],
   "marks": [
+    // === INTERACTIVE CONTROL BUTTONS ===
+    // Buttons for expanding/collapsing phases and changing time granularity
     {
       "name": "buttonMarks",
       "description": "All buttons",
@@ -678,6 +768,8 @@
         }
       ]
     },
+    // === PHASE BACKGROUND HIGHLIGHTING ===
+    // Light blue background rectangles for phase rows
     {
       "name": "phaseBackgrounds",
       "description": "Background rect for phases",
@@ -696,6 +788,8 @@
         }
       }
     },
+    // === ORGANIZATION SEPARATOR LINES ===
+    // Horizontal grid lines between different organizations
     {
       "name": "organizationGridLines",
       "description": "Horizontal grid lines for each Organization group",
@@ -714,6 +808,8 @@
         }
       }
     },
+    // === LEFT-SIDE TABLE COLUMNS ===
+    // Container for all the text columns (Organization, Grant Title, etc.)
     {
       "type": "group",
       "name": "columnHolder",
@@ -732,6 +828,7 @@
         }
       },
       "marks": [
+        // === ORGANIZATION COLUMN ===
         {
           "type": "group",
           "name": "projectColumn",
@@ -779,6 +876,7 @@
             }
           ]
         },
+        // === GRANT TITLE / ACTIVITY COLUMN ===
         {
           "type": "group",
           "name": "taskColumn",
@@ -844,6 +942,7 @@
             }
           ]
         },
+        // === LEARNER LEVEL COLUMN ===
         {
           "type": "group",
           "name": "continualColumn",
@@ -1029,6 +1128,8 @@
         }
       ]
     },
+    // === MAIN GANTT CHART AREA ===
+    // Container for timeline visualization with project lines and activity symbols
     {
       "type": "group",
       "name": "ganttContainer",
@@ -1077,6 +1178,8 @@
             }
           }
         },
+        // === PROJECT TIMELINE BARS ===
+        // Horizontal bars showing project duration for each phase
         {
           "name": "projectLines",
           "description": "Project timeline lines for phases",
@@ -1097,6 +1200,8 @@
             }
           }
         },
+        // === ACTIVITY SYMBOLS ===
+        // Shapes representing individual activities, colored by delivery format
         {
           "name": "activityShapes",
           "description": "Activity shapes for delivery formats - colored by delivery format",
@@ -1345,39 +1450,48 @@
     }
   ],
   "scales": [
+    // === TIME SCALE (X-AXIS) ===
+    // Maps dates to horizontal pixel positions
     {
       "name": "x",
       "type": "time",
-      "domain": {"signal": "xDom"},
-      "range": {"signal": "[0,ganttWidth]"}
+      "domain": {"signal": "xDom"},                    // Time range from signals
+      "range": {"signal": "[0,ganttWidth]"}            // Pixel range for gantt area
     },
+    // === VERTICAL POSITION SCALE (Y-AXIS) ===
+    // Maps row IDs to vertical pixel positions
     {
       "name": "y",
       "type": "band",
       "domain": {
         "fields": [{"data": "yScale", "field": "id"}],
-        "sort": {"op": "min", "field": "finalSort", "order": "ascending"}
+        "sort": {"op": "min", "field": "finalSort", "order": "ascending"}  // Sort by finalSort
       },
-      "range": {"signal": "yRange"}
+      "range": {"signal": "yRange"}                    // Pixel range (handles scrolling)
     },
+    // === COLOR SCALES ===
+    // Dark colors for organizations/projects
     {
       "name": "cDark",
       "type": "ordinal",
       "range": {"signal": "coloursDark"},
       "domain": {"data": "input", "field": "project"}
     },
+    // Light colors for organizations/projects  
     {
       "name": "cLight",
       "type": "ordinal",
       "range": {"signal": "coloursLight"},
       "domain": {"data": "input", "field": "project"}
     },
+    // Colors for delivery format symbols (Live, Online, Web, Print)
     {
       "name": "cDelivery",
       "type": "ordinal",
       "range": ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FECA57", "#FF9FF3", "#54A0FF"],
       "domain": {"data": "input", "field": "task"}
     },
+    // Darker colors for delivery format symbol borders
     {
       "name": "cDeliveryDark",
       "type": "ordinal", 
