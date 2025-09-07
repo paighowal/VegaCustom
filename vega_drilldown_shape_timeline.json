@@ -93,48 +93,41 @@
         }
       ]
     },
+    {"name": "needsScroll", "update": "scaledHeight>height"},
+    {"name": "yScrollMax", "update": "max(1, scaledHeight - height)"},
+    {"name": "thumbHeight", "update": "max(20, height * height / scaledHeight)"},
+    {"name": "thumbY", "update": "needsScroll ? (yRange[0] / yScrollMax) * (height - thumbHeight) : 0"},
     {
-      "type": "group",
-      "name": "scrollbar",
-      "encode": {
-        "update": {
-          "x": {"signal": "columnsWidth + ganttWidth + 5"},
-          "y": {"value": 0},
-          "width": {"value": 10},
-          "height": {"signal": "height"},
-          "fill": {"value": "transparent"},
-          "opacity": {"signal": "needsScroll ? 1 : 0"}
-        }
-      },
-      "marks": [
+      "name": "scrollDown",
+      "value": null,
+      "on": [
+        {"events": {"source": "view", "type": "pointerdown", "markname": "scrollThumb"}, "update": "y()"},
+        {"events": {"source": "window", "type": "pointerup"}, "update": "null"}
+      ]
+    },
+    {
+      "name": "scrollOffset",
+      "value": 0,
+      "on": [
+        {"events": {"source": "view", "type": "pointerdown", "markname": "scrollThumb"}, "update": "y() - thumbY"}
+      ]
+    },
+    {
+      "name": "thumbYDrag",
+      "value": 0,
+      "on": [
         {
-          "type": "rect",
-          "name": "scrollTrack",
-          "encode": {
-            "update": {
-              "x": {"value": 0},
-              "y": {"value": 0},
-              "width": {"value": 8},
-              "height": {"signal": "height"},
-              "fill": {"value": "#f0f0f0"},
-              "stroke": {"value": "#ddd"},
-              "strokeWidth": {"value": 1}
+          "events": [
+            {
+              "source": "window",
+              "type": "pointermove",
+              "between": [
+                {"source": "view", "type": "pointerdown", "markname": "scrollThumb"},
+                {"source": "window", "type": "pointerup"}
+              ]
             }
-          }
-        },
-        {
-          "type": "rect",
-          "name": "scrollThumb",
-          "encode": {
-            "update": {
-              "x": {"value": 1},
-              "y": {"signal": "(yScroll / (data('yScale').length * yRowHeight - height)) * (height - (height * height / (data('yScale').length * yRowHeight)))"},
-              "width": {"value": 6},
-              "height": {"signal": "max(20, height * height / (data('yScale').length * yRowHeight))"},
-              "fill": {"value": "#999"},
-              "cornerRadius": {"value": 3}
-            }
-          }
+          ],
+          "update": "clamp(y() - scrollOffset, 0, height - thumbHeight)"
         }
       ]
     },
@@ -172,6 +165,10 @@
         {
           "events": {"signal": "closeAll"},
           "update": "closeAll?[0, scaledHeight]:yRange"
+        },
+        {
+          "events": {"signal": "thumbYDrag"},
+          "update": "[ (thumbYDrag / (height - thumbHeight)) * yScrollMax, (thumbYDrag / (height - thumbHeight)) * yScrollMax + height ]"
         }
       ]
     },
@@ -409,7 +406,7 @@
         {
           "type": "formula",
           "as": "continuum",
-          "expr": "datum.continuum[0]"
+          "expr": "join(datum.continuum, ', ')"
         },
         {
           "type": "window",
@@ -488,6 +485,20 @@
       ]
     },
     {
+      "name": "orgBoundaries",
+      "source": "phases",
+      "transform": [
+        {
+          "type": "window",
+          "groupby": ["project"],
+          "sort": {"field": ["project", "project_start"], "order": ["ascending", "ascending"]},
+          "ops": ["row_number"],
+          "as": ["r"]
+        },
+        {"type": "filter", "expr": "datum.r == 1"}
+      ]
+    },
+    {
       "name": "xExt",
       "source": "input",
       "transform": [
@@ -539,6 +550,21 @@
     }
   ],
   "marks": [
+    {
+      "name": "orgGridLines",
+      "description": "Horizontal grid lines at Organization group boundaries",
+      "type": "rule",
+      "from": {"data": "orgBoundaries"},
+      "encode": {
+        "update": {
+          "x": {"value": 0},
+          "x2": {"signal": "columnsWidth + ganttWidth"},
+          "y": {"signal": "scale('y', datum.topId)"},
+          "stroke": {"value": "#e6e6e6"},
+          "strokeWidth": {"value": 1}
+        }
+      }
+    },
     {
       "name": "buttonMarks",
       "description": "All buttons",
@@ -1145,6 +1171,53 @@
           "grid": false,
           "ticks": true,
           "bandPosition": {"signal": "0"}
+        }
+      ]
+    }
+    ,
+    {
+      "type": "group",
+      "name": "scrollbarGroup",
+      "encode": {
+        "update": {
+          "x": {"signal": "columnsWidth + ganttWidth + 5"},
+          "y": {"value": 0},
+          "width": {"value": 10},
+          "height": {"signal": "height"},
+          "fill": {"value": "transparent"},
+          "opacity": {"signal": "needsScroll ? 1 : 0"}
+        }
+      },
+      "marks": [
+        {
+          "type": "rect",
+          "name": "scrollTrack",
+          "encode": {
+            "update": {
+              "x": {"value": 0},
+              "y": {"value": 0},
+              "width": {"value": 8},
+              "height": {"signal": "height"},
+              "fill": {"value": "#f0f0f0"},
+              "stroke": {"value": "#ddd"},
+              "strokeWidth": {"value": 1}
+            }
+          }
+        },
+        {
+          "type": "rect",
+          "name": "scrollThumb",
+          "encode": {
+            "update": {
+              "x": {"value": 1},
+              "y": {"signal": "thumbY"},
+              "width": {"value": 6},
+              "height": {"signal": "thumbHeight"},
+              "fill": {"value": "#999"},
+              "cornerRadius": {"value": 3},
+              "cursor": {"value": "ns-resize"}
+            }
+          }
         }
       ]
     }
