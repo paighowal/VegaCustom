@@ -6,7 +6,7 @@
   "padding": {"left": 5, "right": 0, "top": 5, "bottom": 0},
   "signals": [
     {"name": "minHeight", "value": 300, "description": "Minimum height of the visual"},
-    {"name": "maxHeight", "value": 800, "description": "Maximum height before scrolling kicks in"},
+    {"name": "maxHeight", "value": 50000, "description": "Maximum height before scrolling kicks in"},
     {"name": "heightPadding", "value": 100, "description": "Extra padding for dynamic height calculation"},
     {"name": "enableDynamicHeight", "value": true, "description": "Enable/disable dynamic height"},
     {"name": "dynamicHeight", "update": "enableDynamicHeight ? max(minHeight, min(maxHeight, data('yScale').length * yRowHeight + heightPadding)) : 500"},
