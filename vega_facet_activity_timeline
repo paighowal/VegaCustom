@@ -1,0 +1,248 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "name": "dataset"
+  },
+  "transform": [
+    {
+      "calculate": "datetime(year(now()), quarter(now()) * 3 - 2, 1)",
+      "as": "StartOfCurrentQuarter"
+    },
+    {
+      "calculate": "datetime(year(now()), 0, 1)",
+      "as": "StartOfCurrentYear"
+    },
+    {
+      "calculate": "datetime(year(now()) + 1, 0, 1)",
+      "as": "EndOfCurrentYear"
+    },
+    {
+      "calculate": "datum.StartMilestoneDate",
+      "as": "ConcatenatedMilestone"
+    }
+  ],
+  "facet": {
+    "row": {
+      "field": "Funding Source / Sponsor Type",
+      "type": "nominal",
+      "title": "Funding Source",
+      "spacing": 0,
+      "header": {
+        "labelAngle": 0,
+        "title": null,
+        "labelAlign": "center",
+        "labelPadding": 0
+      }
+    }
+  },
+  "spec": {
+    "facet": {
+      "row": {
+        "field": "Study_Name",
+        "type": "nominal",
+        "title": "Study_Name",
+        "spacing": 0,
+        "header": {
+          "labelAngle": 0,
+          "title": null,
+          "labelAlign": "left",
+          "labelExpr": "split(datum.label, '|')"
+        }
+      }
+    },
+    "spec": {
+      "facet": {
+        "row": {
+          "field": "Milestone Name",
+          "type": "nominal",
+          "title": "Milestone Name",
+          "spacing": 0,
+          "header": {
+            "labelAngle": 0,
+            "title": null,
+            "labelAlign": "left",
+            "labels": false
+          },
+          "sort": {
+            "field": "StartMilestoneDate",
+            "order": "ascending"
+          }
+        }
+      },
+      "spec": {
+        "height": 35,
+        "layer": [
+          {"params": [
+              {"name": "grid", "select": "interval", "bind": "scales"}
+            ],
+            "mark": {
+              "type": "rect",
+              "color": "lightgrey",
+              "opacity": 0.3,
+              "borderColor": "lightgrey"
+            },
+            "encoding": {
+              "x": {
+                "field": "StartOfCurrentYear",
+                "type": "temporal"
+              },
+              "x2": {
+                "field": "EndOfCurrentYear",
+                "type": "temporal"
+              }
+            }
+          },
+          {
+            "mark": {
+              "type": "rule",
+              "color": "gray",
+              "size": 2,
+              "strokeDash": [4, 4]
+            },
+            "encoding": {
+              "x": {
+                "field": "StartOfCurrentYear",
+                "type": "temporal"
+              }
+            }
+          },
+          {
+            "mark": {
+              "type": "rule",
+              "color": "gray",
+              "size": 2,
+              "strokeDash": [4, 4]
+            },
+            "encoding": {
+              "x": {
+                "field": "EndOfCurrentYear",
+                "type": "temporal"
+              }
+            }
+          },
+          {
+            "mark": {
+              "type": "point",
+              "size": 200,
+              "opacity": 0.9,
+              "filled": true
+            },
+            "encoding": {
+              "x": {
+                "field": "StartMilestoneDate",
+                "type": "temporal",
+                "timeUnit": "yearquarter",
+                "scale": {
+                  "padding": 20
+                },
+                "axis": {
+                  "title": "",
+                  "labelAngle": 0,
+                  "labelOverlap": false,
+                  "grid": false,
+                  "format": "%Y-Q%q",
+                  "labelExpr": "timeFormat(datum.value, '%Y') + ' Q' + quarter(datum.value)",
+                  "orient": "top"
+                }
+              },
+              "color": {
+                "field": "Milestone Type",
+                "type": "nominal",
+                "title": "Milestone Type",
+                "scale": {
+                  "domain": ["Future Milestone", "Accomplished Milestone"],
+                  "range": ["orange", "green"]
+                },
+                "legend": {
+                  "orient": "right",
+                  "direction": "vertical",
+                  "labelLimit": 200,
+                  "symbolSize": 200
+                }
+              },
+              "shape": {
+                "field": "Milestone Name",
+                "type": "nominal",
+                "legend": {
+                  "orient": "right",
+                  "direction": "vertical",
+                  "labelLimit": 200,
+                  "symbolSize": 200
+                }
+              },
+              "tooltip": [
+                {
+                  "field": "ConcatenatedMilestone",
+                  "type": "nominal",
+                  "title": "Milestone Name"
+                },
+                {
+                  "field": "StartMilestoneDate",
+                  "type": "temporal",
+                  "title": "Start Date"
+                },
+                {
+                  "field": "Study_Name",
+                  "type": "nominal",
+                  "title": "Study ID"
+                },
+                {
+                  "field": "Funding Source / Sponsor Type",
+                  "type": "nominal",
+                  "title": "Funding Source"
+                }
+              ]
+            }
+          },
+          {
+            "mark": {
+              "type": "text",
+              "align": "right",
+              "dx": -10,
+              "dy": 0
+            },
+            "encoding": {
+              "x": {
+                "field": "StartMilestoneDate",
+                "type": "temporal",
+                "timeUnit": "yearquarter"
+              },
+              "text": {
+                "field": "Milestone Name",
+                "type": "nominal"
+              }
+            }
+          }
+        ]
+      }
+    }
+    ,
+  "resolve": {"scale": {"y": "independent"}}
+  },
+  "resolve": {"scale": {"y": "independent"}},
+  "config": {
+    "view": {
+      "width": 1000,
+      "stroke": "gainsboro",
+      "strokeWidth": -12,
+      "padding": 0
+    },
+    "facet": {
+      "spacing": 10  // Adjusted spacing
+    },
+    "header": {
+      "labelAlign": "left",
+      "labelFontSize": 15,
+      "titleFontSize": 20
+    },
+    "axisX": {
+      "labelAlign": "center",
+      "domainColor": "black",
+      "labelPadding": 0
+    },
+    "axisY": {
+      "domainColor": "black",
+      "grid": false
+    }
+  }
+}
