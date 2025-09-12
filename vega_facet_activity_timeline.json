@@ -38,13 +38,14 @@
       "spacing": 0,
       "header": {
         "labelAngle": 0,
+        "labelAlign": "center",
+        "labelPadding": 0,
         "title": "Funding Source",
         "titleOrient": "left",
         "titleAnchor": "start",
         "titleAlign": "left",
         "titlePadding": 4,
-        "labelAlign": "center",
-        "labelPadding": 0
+        "titleFontSize": 16
       }
     }
   },
@@ -54,16 +55,18 @@
       "row": {
         "field": "Study_Name",
         "type": "nominal",
-        "title": "Study_Name",
+        "title": "Study Name",
         "spacing": 0,
         "header": {
           "labelAngle": 0,
-          "title": "Study_Name",
+          "labelAlign": "left",
+          "labelPadding": 0,
+          "title": "Study Name",
           "titleOrient": "left",
           "titleAnchor": "start",
           "titleAlign": "left",
           "titlePadding": 4,
-          "labelAlign": "left",
+          "titleFontSize": 14,
           // Split study names on '|' character for better display
           "labelExpr": "split(datum.label, '|')"
         }
@@ -262,12 +265,22 @@
       "padding": 0
     },
     "facet": {
-      "spacing": 10  // Adjusted spacing between facet panels
+      "spacing": 10,  // Adjusted spacing between facet panels
+      "header": {
+        "titleOrient": "left",
+        "titleAnchor": "start",
+        "titleAlign": "left",
+        "titlePadding": 4
+      }
     },
     "header": {
       "labelAlign": "left",
       "labelFontSize": 15,
-      "titleFontSize": 20
+      "titleFontSize": 20,
+      "titleOrient": "left",
+      "titleAnchor": "start",
+      "titleAlign": "left",
+      "titlePadding": 4
     },
     "axisX": {
       "labelAlign": "center",
