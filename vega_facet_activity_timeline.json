@@ -39,6 +39,10 @@
       "header": {
         "labelAngle": 0,
         "title": "Funding Source",
+        "titleOrient": "left",
+        "titleAnchor": "start",
+        "titleAlign": "left",
+        "titlePadding": 4,
         "labelAlign": "center",
         "labelPadding": 0
       }
@@ -55,6 +59,10 @@
         "header": {
           "labelAngle": 0,
           "title": "Study_Name",
+          "titleOrient": "left",
+          "titleAnchor": "start",
+          "titleAlign": "left",
+          "titlePadding": 4,
           "labelAlign": "left",
           // Split study names on '|' character for better display
           "labelExpr": "split(datum.label, '|')"
