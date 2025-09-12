@@ -1,6 +1,6 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v6.json",
-  "description": "Modified Gantt Chart - Shape-based Activity View for Medical Education",
+  "description": "Milestone Tracking Chart - Shape-based Milestone View for Study Management",
   
   // Auto-sizing configuration for responsive behavior
   "autosize": {"type": "fit", "resize": true},
@@ -22,15 +22,15 @@
     {"name": "showButtons", "value": true},
     {"name": "showDomainSpanLabel", "value": false},
     // === TIME GRANULARITY CONTROLS ===
-    // Default to "Months" view - this makes Months button preselected
+    // Default to "Quarter" view - this makes Quarter button preselected
     {
       "name": "startGrain",
-      "value": "Months",
-      "description": "Days, Months, Years or All - Months is default"
+      "value": "Quarter",
+      "description": "Days, Months, Quarters, Years or All - Quarter is default"
     },
     
     // === INITIAL STATE CONFIGURATION ===
-    {"name": "initPhaseState", "value": "close", "description": "open or close"},
+    {"name": "initPhaseState", "value": "open", "description": "open or close"},
     
     // === COLOR SCHEMES ===
     // Text color for labels and UI elements
@@ -56,9 +56,9 @@
     {"name": "yPaddingInner", "update": "yRowPadding * yRowHeight"},
     
     // Column width definitions for the left-side table
-    {"name": "projectColumnWidth", "value": 170},      // Organization column
-    {"name": "taskColumnWidth", "value": 250},         // Grant Title/Activity column
-    {"name": "continualColumnWidth", "value": 100},    // Learner Level column
+    {"name": "fundingSourceColumnWidth", "value": 200}, // Funding Source / Sponsor Type column
+    {"name": "studyNameColumnWidth", "value": 300},     // Study Name column
+    {"name": "milestoneTypeColumnWidth", "value": 120}, // Milestone Type column
     {"name": "startColumnWidth", "value": 55},         // Start Date column
     {"name": "endColumnWidth", "value": 55},           // End Date column
     {"name": "columnPadding", "value": 15},            // Padding between columns
@@ -92,7 +92,7 @@
     // Total width of all columns combined
     {
       "name": "columnsWidth",
-      "update": "projectColumnWidth+taskColumnWidth+continualColumnWidth+startColumnWidth+endColumnWidth+(columnPadding*5)"
+      "update": "fundingSourceColumnWidth+studyNameColumnWidth+milestoneTypeColumnWidth+startColumnWidth+endColumnWidth+(columnPadding*5)"
     },
     // Width available for the Gantt chart timeline
     {"name": "ganttWidth", "update": "width-columnsWidth-minDayBandwidth"},
@@ -107,6 +107,10 @@
       "update": "[data('xExt')[0]['s']-oneDay ,data('xExt')[0]['s'] + ganttWidth/2*oneDay]"
     },
     {
+      "name": "quarterExt",
+      "update": "[data('xExt')[0]['s']-oneDay,data('xExt')[0]['s'] + ganttWidth/1.5*oneDay]"
+    },
+    {
       "name": "yearExt",
       "update": "[data('xExt')[0]['s']-oneDay,data('xExt')[0]['s'] + ganttWidth/0.35*oneDay]"
     },
@@ -117,7 +121,7 @@
     // Select appropriate time extent based on current granularity
     {
       "name": "xExt",
-      "update": "startGrain=='All'?allExt:startGrain=='Years'?yearExt:startGrain=='Months'?monthExt:dayExt"
+      "update": "startGrain=='All'?allExt:startGrain=='Years'?yearExt:startGrain=='Quarter'?quarterExt:startGrain=='Months'?monthExt:dayExt"
     },
     // === TODAY MARKER ===
     // Calculate today's date for timeline marker
@@ -220,7 +224,7 @@
         {"events": "dblclick", "update": "xExt"},
         {
           "events": "@buttonMarks:click",
-          "update": "datum.text=='All'?allExt:datum.text=='Years'?yearExt:datum.text=='Months'?monthExt:datum.text=='Days'?dayExt:xDom"
+          "update": "datum.text=='All'?allExt:datum.text=='Years'?yearExt:datum.text=='Quarter'?quarterExt:datum.text=='Months'?monthExt:datum.text=='Days'?dayExt:xDom"
         }
       ]
     },
@@ -366,10 +370,7 @@
       "name": "dataset",
       "format": {
         "parse": {
-          "activity_start_date": "date",     // Parse activity start as date
-          "activity_end_date": "date",       // Parse activity end as date
-          "project_start_date": "date",      // Parse project start as date
-          "project_end_date": "date"         // Parse project end as date
+          "StartMilestoneDate": "date"       // Parse milestone start date as date
         }
       },
       "transform": [
@@ -377,57 +378,57 @@
         {
           "type": "formula",
           "as": "id",
-          "expr": "datum.activity_index"                // Unique identifier for each activity
+          "expr": "datum.milestone_index"                // Unique identifier for each milestone
         },
         {
           "type": "formula",
           "as": "project",
-          "expr": "datum.Organization_Name"             // Organization name (project grouping)
+          "expr": "datum['Funding Source / Sponsor Type']" // Funding Source / Sponsor Type (project grouping)
         },
         {
           "type": "formula",
           "as": "phase",
-          "expr": "datum.Grant_Title"                   // Grant title (phase grouping)
+          "expr": "datum.Study_Name"                    // Study Name (phase grouping)
         },
         {
           "type": "formula",
           "as": "task",
-          "expr": "datum.delivery_format"               // Delivery format (activity type)
+          "expr": "datum['Milestone Name']"             // Milestone Name (activity type)
         },
         {
           "type": "formula",
           "as": "continuum",
-          "expr": "datum.learner_continuum_level"       // Learner education level
+          "expr": "datum['Milestone Type']"            // Milestone Type
         },
         {
           "type": "formula",
           "as": "start",
-          "expr": "datum.activity_start_date"           // Activity start date
+          "expr": "datum.StartMilestoneDate"            // Milestone start date
         },
         {
           "type": "formula",
           "as": "end",
-          "expr": "datum.activity_end_date"             // Activity end date
+          "expr": "datum.StartMilestoneDate"            // Milestone end date (same as start for milestones)
         },
         {
           "type": "formula",
           "as": "project_start",
-          "expr": "datum.project_start_date"            // Project start date
+          "expr": "datum.StartMilestoneDate"            // Project start date (using milestone date)
         },
         {
           "type": "formula",
           "as": "project_end",
-          "expr": "datum.project_end_date"              // Project end date
+          "expr": "datum.StartMilestoneDate"            // Project end date (using milestone date)
         },
         {
           "type": "formula",
           "as": "showTextLabel",
-          "expr": "datum.ShowTextLabel || ''"           // Optional text labels for activities
+          "expr": "datum['Milestone Name'] || ''"        // Milestone Name as text label
         },
         {
           "type": "formula",
-          "as": "activityCompleted",
-          "expr": "datum['ActivityCompleted%'] || 0"    // Activity completion percentage
+          "as": "milestoneType",
+          "expr": "datum['Milestone Type'] || ''"        // Milestone Type for coloring
         }
       ]
     },
@@ -636,10 +637,11 @@
       "values": [
         {"side": "left", "text": "Close", "x": 15, "leftRadius": 4},    // Collapse all phases
         {"side": "left", "text": "Open", "x": 65, "rightRadius": 4},     // Expand all phases
-        {"side": "right", "text": "All", "x": 50, "rightRadius": 4},      // Show all time
+        {"side": "right", "text": "All", "x": 50},                        // Show all time
         {"side": "right", "text": "Years", "x": 100},                     // Year granularity
-        {"side": "right", "text": "Months", "x": 150},                    // Month granularity
-        {"side": "right", "text": "Days", "x": 200, "leftRadius": 4}      // Day granularity
+        {"side": "right", "text": "Quarter", "x": 150},                   // Quarter granularity
+        {"side": "right", "text": "Months", "x": 200},                    // Month granularity
+        {"side": "right", "text": "Days", "x": 250, "leftRadius": 4}      // Day granularity
       ]
     },
     // === ORGANIZATION GRID LINES ===
@@ -717,6 +719,10 @@
               "value": "#4e95d9"
             },
             {
+              "test": "datum.text=='Quarter' && dayBandwidthRound>=minMonthBandwidth && dayBandwidthRound<minYearBandwidth",
+              "value": "#4e95d9"
+            },
+            {
               "test": "datum.text=='Years' && dayBandwidthRound<minYearBandwidth",
               "value": "#4e95d9"
             },
@@ -752,6 +758,10 @@
                 },
                 {
                   "test": "parent.text=='Months' && dayBandwidthRound>=minYearBandwidth && dayBandwidthRound<minDayBandwidth",
+                  "value": "white"
+                },
+                {
+                  "test": "parent.text=='Quarter' && dayBandwidthRound>=minMonthBandwidth && dayBandwidthRound<minYearBandwidth",
                   "value": "white"
                 },
                 {
@@ -831,7 +841,7 @@
           "name": "projectColumn",
           "style": "cell",
           "title": {
-            "text": "Organization",
+            "text": "Funding Source / Sponsor Type",
             "anchor": "start",
             "frame": "group",
             "align": "left",
@@ -840,7 +850,7 @@
           "encode": {
             "enter": {
               "stroke": {"value": "transparent"},
-              "width": {"signal": "projectColumnWidth"},
+              "width": {"signal": "fundingSourceColumnWidth"},
               "height": {"signal": "height"}
             }
           },
@@ -864,12 +874,12 @@
                   "fontWeight": {
                     "signal": "datum.phase == datum.task?'bold':'normal'"
                   },
-                  "limit": {"signal": "projectColumnWidth-16"},
+                  "limit": {"signal": "fundingSourceColumnWidth-16"},
                   "fill": {
                     "signal": "toString(datum.id) == itemHovered.id  ?merge(hsl(scale('cDark', datum.project)), {l:0.40}):textColour"
                   },
                   "tooltip": {
-                    "signal": "showTooltips ? {'Organization': datum.project} : null"
+                    "signal": "showTooltips ? {'Funding Source / Sponsor Type': datum.project} : null"
                   }
                 }
               }
@@ -882,7 +892,7 @@
           "name": "taskColumn",
           "style": "cell",
           "title": {
-            "text": "Grant Title / Activity",
+            "text": "Study Name",
             "anchor": "start",
             "frame": "group",
             "align": "left",
@@ -891,7 +901,7 @@
           "encode": {
             "enter": {
               "stroke": {"value": "transparent"},
-              "width": {"signal": "taskColumnWidth"},
+              "width": {"signal": "studyNameColumnWidth"},
               "height": {"signal": "height"}
             }
           },
@@ -915,12 +925,12 @@
                   "fontWeight": {
                     "signal": "datum.phase == datum.task?'bold':'normal'"
                   },
-                  "limit": {"signal": "taskColumnWidth-16"},
+                  "limit": {"signal": "studyNameColumnWidth-16"},
                   "fill": {
                     "signal": "toString(datum.id) == itemHovered.id  ?merge(hsl(scale('cDark', datum.project)), {l:0.40}):textColour"
                   },
                   "tooltip": {
-                    "signal": "showTooltips ? (datum.phase == datum.task ? {'Grant Title': datum.phase} : {'Activity': datum.task, 'Grant Title': datum.phase}) : null"
+                    "signal": "showTooltips ? (datum.phase == datum.task ? {'Study Name': datum.phase} : {'Milestone Name': datum.task, 'Study Name': datum.phase}) : null"
                   }
                 }
               }
@@ -951,7 +961,7 @@
           "name": "continualColumn",
           "style": "cell",
           "title": {
-            "text": "Learner Level",
+            "text": "Milestone Type",
             "anchor": "start",
             "frame": "group",
             "align": "left",
@@ -960,7 +970,7 @@
           "encode": {
             "enter": {
               "stroke": {"value": "transparent"},
-              "width": {"signal": "continualColumnWidth"},
+              "width": {"signal": "milestoneTypeColumnWidth"},
               "height": {"signal": "height"}
             }
           },
@@ -982,12 +992,12 @@
                   "fontWeight": {
                     "signal": "datum.phase == datum.task?'bold':'normal'"
                   },
-                  "limit": {"signal": "continualColumnWidth-16"},
+                  "limit": {"signal": "milestoneTypeColumnWidth-16"},
                   "fill": {
                     "signal": "toString(datum.id) == itemHovered.id  ?merge(hsl(scale('cDark', datum.project)), {l:0.40}):textColour"
                   },
                   "tooltip": {
-                    "signal": "showTooltips && datum.continuum ? {'Learner Level': datum.continuum} : null"
+                    "signal": "showTooltips && datum.continuum ? {'Milestone Type': datum.continuum} : null"
                   }
                 }
               }
@@ -1201,7 +1211,7 @@
                 "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDark', datum.project)), {l:0.40}):scale('cDark', datum.project)"
               },
               "tooltip": {
-                "signal": "showTooltips&&down==null?{'Organization':datum.project,'Grant Title':datum.phase , 'Project Start':timeFormat(datum.project_start,'%a, %d %B %Y' ),'Project End':timeFormat(datum.project_end,'%a, %d %B %Y' ), 'Learner Level':datum.continuum }:null"
+                "signal": "showTooltips&&down==null?{'Funding Source / Sponsor Type':datum.project,'Study Name':datum.phase , 'Milestone Start':timeFormat(datum.project_start,'%a, %d %B %Y' ),'Milestone End':timeFormat(datum.project_end,'%a, %d %B %Y' ), 'Milestone Type':datum.continuum }:null"
               }
             }
           }
@@ -1210,7 +1220,7 @@
         // Shapes representing individual activities, colored by delivery format
         {
           "name": "activityShapes",
-          "description": "Activity shapes for delivery formats - colored by delivery format",
+          "description": "Milestone shapes - colored by milestone type",
           "type": "symbol",
           "from": {"data": "tasks"},
           "encode": {
@@ -1219,19 +1229,19 @@
               "yc": {"signal": "(scale('y',datum.id)+bandwidth('y')/2)"},
               "size": {"value": 120},
               "shape": {
-                "signal": "datum.task == 'Live' ? 'circle' : datum.task == 'Online' ? 'square' : datum.task == 'Web' ? 'triangle-up' : datum.task == 'Print' ? 'diamond' : 'circle'"
+                "signal": "datum.task == 'Initiation' ? 'circle' : datum.task == 'Planning' ? 'square' : datum.task == 'Execution' ? 'triangle-up' : datum.task == 'Monitoring' ? 'diamond' : datum.task == 'Closure' ? 'triangle-down' : 'circle'"
               },
               "fill": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDelivery', datum.task)), {l:0.65}):scale('cDelivery', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cMilestoneType', datum.continuum)), {l:0.65}):scale('cMilestoneType', datum.continuum)"
               },
               "stroke": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDeliveryDark', datum.task)), {l:0.40}):scale('cDeliveryDark', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cMilestoneTypeDark', datum.continuum)), {l:0.40}):scale('cMilestoneTypeDark', datum.continuum)"
               },
               "strokeWidth": {
                 "signal": "toString(datum.id) == itemHovered.id?2:1.5"
               },
               "tooltip": {
-                "signal": "showTooltips&&down==null?{'Organization':datum.project,'Grant Title':datum.phase ,'Delivery Format':datum.task , 'Activity Start':timeFormat(datum.start,'%a, %d %B %Y' ),'Activity End':timeFormat(datum.end,'%a, %d %B %Y' ), 'Learner Level':datum.continuum, 'Activity Completed %': datum.activityCompleted }:null"
+                "signal": "showTooltips&&down==null?{'Funding Source / Sponsor Type':datum.project,'Study Name':datum.phase ,'Milestone Name':datum.task , 'Milestone Start':timeFormat(datum.start,'%a, %d %B %Y' ),'Milestone End':timeFormat(datum.end,'%a, %d %B %Y' ), 'Milestone Type':datum.continuum }:null"
               }
             }
           }
@@ -1247,20 +1257,20 @@
               "yc": {"signal": "scale('y', datum.phase_id) + bandwidth('y')/2"},
               "size": {"value": 100},
               "shape": {
-                "signal": "datum.task == 'Live' ? 'circle' : datum.task == 'Online' ? 'square' : datum.task == 'Web' ? 'triangle-up' : datum.task == 'Print' ? 'diamond' : 'circle'"
+                "signal": "datum.task == 'Initiation' ? 'circle' : datum.task == 'Planning' ? 'square' : datum.task == 'Execution' ? 'triangle-up' : datum.task == 'Monitoring' ? 'diamond' : datum.task == 'Closure' ? 'triangle-down' : 'circle'"
               },
               "fill": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDelivery', datum.task)), {l:0.65}):scale('cDelivery', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cMilestoneType', datum.continuum)), {l:0.65}):scale('cMilestoneType', datum.continuum)"
               },
               "stroke": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDeliveryDark', datum.task)), {l:0.40}):scale('cDeliveryDark', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cMilestoneTypeDark', datum.continuum)), {l:0.40}):scale('cMilestoneTypeDark', datum.continuum)"
               },
               "strokeWidth": {
                 "signal": "toString(datum.id) == itemHovered.id?2:1.5"
               },
               "opacity": {"value": 0.8},
               "tooltip": {
-                "signal": "showTooltips&&down==null?{'Organization':datum.project,'Grant Title':datum.phase ,'Delivery Format':datum.task , 'Activity Start':timeFormat(datum.start,'%a, %d %B %Y' ),'Activity End':timeFormat(datum.end,'%a, %d %B %Y' ), 'Learner Level':datum.continuum, 'Activity Completed %': datum.activityCompleted }:null"
+                "signal": "showTooltips&&down==null?{'Funding Source / Sponsor Type':datum.project,'Study Name':datum.phase ,'Milestone Name':datum.task , 'Milestone Start':timeFormat(datum.start,'%a, %d %B %Y' ),'Milestone End':timeFormat(datum.end,'%a, %d %B %Y' ), 'Milestone Type':datum.continuum }:null"
               }
             }
           }
@@ -1490,19 +1500,19 @@
       "range": {"signal": "coloursLight"},
       "domain": {"data": "input", "field": "project"}
     },
-    // Colors for delivery format symbols (Live, Online, Web, Print)
+    // Colors for milestone type (coloring the shapes)
     {
-      "name": "cDelivery",
+      "name": "cMilestoneType",
       "type": "ordinal",
       "range": ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FECA57", "#FF9FF3", "#54A0FF"],
-      "domain": {"data": "input", "field": "task"}
+      "domain": {"data": "input", "field": "continuum"}
     },
-    // Darker colors for delivery format symbol borders
+    // Darker colors for milestone type symbol borders
     {
-      "name": "cDeliveryDark",
+      "name": "cMilestoneTypeDark",
       "type": "ordinal", 
       "range": ["#FF5252", "#26A69A", "#2196F3", "#66BB6A", "#FFA726", "#E91E63", "#3F51B5"],
-      "domain": {"data": "input", "field": "task"}
+      "domain": {"data": "input", "field": "continuum"}
     }
   ],
   "config": {
