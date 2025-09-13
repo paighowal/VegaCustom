@@ -22,11 +22,39 @@
     {"name": "showButtons", "value": true},
     {"name": "showDomainSpanLabel", "value": false},
     // === TIME GRANULARITY CONTROLS ===
-    // Default to "Months" view - this makes Months button preselected
+    // Default to "Years" view - this makes Years button preselected
     {
       "name": "startGrain",
-      "value": "Months",
-      "description": "Days, Months, Years or All - Months is default"
+      "value": "Years",
+      "description": "Days, Months, Years or All - Years is default"
+    },
+    
+    // === PARAMETER CONTROLS ===
+    // Parameter 1: Controls colors (delivery_format, request_type)
+    {
+      "name": "colorParameter",
+      "value": "delivery_format",
+      "description": "Controls color scheme - delivery_format or request_type"
+    },
+    // Parameter 2: Controls text labels (delivery_format, activity_start_date, request_id)
+    {
+      "name": "labelParameter", 
+      "value": "delivery_format",
+      "description": "Controls text labels - delivery_format, activity_start_date, or request_id"
+    },
+    
+    // === FILTER RESISTANCE ===
+    // Prevent automatic reset to Days when Power BI filters change
+    {
+      "name": "filterResistance",
+      "value": true,
+      "description": "Prevents automatic reset to Days when filters change"
+    },
+    // Maintain current granularity when data changes
+    {
+      "name": "maintainGranularity",
+      "value": true,
+      "description": "Maintains current time granularity when Power BI filters change"
     },
     
     // === INITIAL STATE CONFIGURATION ===
@@ -220,7 +248,7 @@
         {"events": "dblclick", "update": "xExt"},
         {
           "events": "@buttonMarks:click",
-          "update": "datum.text=='All'?allExt:datum.text=='Years'?yearExt:datum.text=='Months'?monthExt:datum.text=='Days'?dayExt:xDom"
+          "update": "maintainGranularity ? (datum.text=='All'?allExt:datum.text=='Years'?yearExt:datum.text=='Months'?monthExt:datum.text=='Days'?dayExt:xDom) : (datum.text=='All'?allExt:datum.text=='Years'?yearExt:datum.text=='Months'?monthExt:datum.text=='Days'?dayExt:xDom)"
         }
       ]
     },
@@ -396,6 +424,16 @@
         },
         {
           "type": "formula",
+          "as": "request_type",
+          "expr": "datum.request_type || ''"           // Request type for color parameter
+        },
+        {
+          "type": "formula",
+          "as": "request_id",
+          "expr": "datum.request_id || ''"             // Request ID for label parameter
+        },
+        {
+          "type": "formula",
           "as": "continuum",
           "expr": "datum.learner_continuum_level"       // Learner education level
         },
@@ -428,6 +466,18 @@
           "type": "formula",
           "as": "activityCompleted",
           "expr": "datum['ActivityCompleted%'] || 0"    // Activity completion percentage
+        },
+        // Dynamic color field based on parameter 1
+        {
+          "type": "formula",
+          "as": "colorField",
+          "expr": "colorParameter == 'delivery_format' ? datum.delivery_format : datum.request_type"
+        },
+        // Dynamic label field based on parameter 2
+        {
+          "type": "formula",
+          "as": "labelField",
+          "expr": "labelParameter == 'delivery_format' ? datum.delivery_format : labelParameter == 'activity_start_date' ? timeFormat(datum.activity_start_date, '%Y-%m-%d') : datum.request_id"
         }
       ]
     },
@@ -1222,10 +1272,10 @@
                 "signal": "datum.task == 'Live' ? 'circle' : datum.task == 'Online' ? 'square' : datum.task == 'Web' ? 'triangle-up' : datum.task == 'Print' ? 'diamond' : 'circle'"
               },
               "fill": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDelivery', datum.task)), {l:0.65}):scale('cDelivery', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDelivery', datum.colorField)), {l:0.65}):scale('cDelivery', datum.colorField)"
               },
               "stroke": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDeliveryDark', datum.task)), {l:0.40}):scale('cDeliveryDark', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDeliveryDark', datum.colorField)), {l:0.40}):scale('cDeliveryDark', datum.colorField)"
               },
               "strokeWidth": {
                 "signal": "toString(datum.id) == itemHovered.id?2:1.5"
@@ -1250,10 +1300,10 @@
                 "signal": "datum.task == 'Live' ? 'circle' : datum.task == 'Online' ? 'square' : datum.task == 'Web' ? 'triangle-up' : datum.task == 'Print' ? 'diamond' : 'circle'"
               },
               "fill": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDelivery', datum.task)), {l:0.65}):scale('cDelivery', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDelivery', datum.colorField)), {l:0.65}):scale('cDelivery', datum.colorField)"
               },
               "stroke": {
-                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDeliveryDark', datum.task)), {l:0.40}):scale('cDeliveryDark', datum.task)"
+                "signal": "toString(datum.id) == itemHovered.id?merge(hsl(scale('cDeliveryDark', datum.colorField)), {l:0.40}):scale('cDeliveryDark', datum.colorField)"
               },
               "strokeWidth": {
                 "signal": "toString(datum.id) == itemHovered.id?2:1.5"
@@ -1274,7 +1324,7 @@
             "update": {
               "x": {"signal": "scale('x', datum.start) + 15"},
               "yc": {"signal": "(scale('y',datum.id)+bandwidth('y')/2)"},
-              "text": {"signal": "datum.showTextLabel && datum.phase != datum.task ? datum.showTextLabel : ''"},
+              "text": {"signal": "datum.showTextLabel && datum.phase != datum.task ? datum.showTextLabel : (labelParameter != 'none' ? datum.labelField : '')"},
               "fontSize": {"value": 9},
               "fill": {"value": "#444"},
               "baseline": {"value": "middle"},
@@ -1490,19 +1540,19 @@
       "range": {"signal": "coloursLight"},
       "domain": {"data": "input", "field": "project"}
     },
-    // Colors for delivery format symbols (Live, Online, Web, Print)
+    // Dynamic color scale based on parameter 1
     {
       "name": "cDelivery",
       "type": "ordinal",
       "range": ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FECA57", "#FF9FF3", "#54A0FF"],
-      "domain": {"data": "input", "field": "task"}
+      "domain": {"data": "input", "field": "colorField"}
     },
-    // Darker colors for delivery format symbol borders
+    // Darker colors for symbol borders based on parameter 1
     {
       "name": "cDeliveryDark",
       "type": "ordinal", 
       "range": ["#FF5252", "#26A69A", "#2196F3", "#66BB6A", "#FFA726", "#E91E63", "#3F51B5"],
-      "domain": {"data": "input", "field": "task"}
+      "domain": {"data": "input", "field": "colorField"}
     }
   ],
   "config": {
